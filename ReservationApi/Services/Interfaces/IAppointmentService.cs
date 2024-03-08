@@ -9,7 +9,7 @@ namespace ReservationApi.Services.Interfaces
     {
         Task<Appointment> MakeReservation(int availabilityId, int clientId);
 
-        Task ConfirmReservation(int appointmentId);
+        Task<Appointment> ConfirmReservation(int appointmentId);
 
         // further consideratin: cancel appointment
     }

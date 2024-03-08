@@ -18,8 +18,6 @@ namespace ReservationApi.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AppointmentService> _logger;
 
-        private const string TypeName = "AppointmentService";
-
         public AppointmentService(ApplicationDbContext context, ILogger<AppointmentService> logger)
         {
             _context = context;
@@ -34,7 +32,7 @@ namespace ReservationApi.Services
         /// <returns></returns>
         public async Task<Appointment> MakeReservation(int availabilityId, int clientId)
         {
-            _logger.LogDebug("[{TypeName}] MakeReservation starts: availabilityId: {availabilityId}, clientId: {clientId}", TypeName, availabilityId, clientId);
+            _logger.LogDebug("MakeReservation starts: availabilityId: {availabilityId}, clientId: {clientId}", availabilityId, clientId);
 
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
@@ -44,8 +42,8 @@ namespace ReservationApi.Services
                     var client = await _context.Clients.FindAsync(clientId);
                     if (availability == null || client == null)
                     {
-                        string msg = "null availability or client";
-                        _logger.LogWarning("[{TypeName}] {msg}", TypeName, msg);
+                        string msg = "Slot or client not found.";
+                        _logger.LogWarning("{msg}", msg);
                         throw new ReservationException(msg);
                     }
 
@@ -54,12 +52,22 @@ namespace ReservationApi.Services
                     if (availability.StartTime < currentTime.AddHours(24))
                     {
                         string msg = "reservations must be mde at least 24 hours in advance.";
-                        _logger.LogWarning("[{TypeName}] {msg}", TypeName, msg);
+                        _logger.LogWarning("{msg}", msg);
+                        throw new ReservationException(msg);
+                    }
+
+                    var existingAppointment = await _context.Appointments
+                        .Where(a => a.AvailabilityId == availabilityId && a.ClientId == clientId && (a.IsConfirmed || a.ExpirationTime > currentTime))
+                        .FirstOrDefaultAsync();
+                    if (existingAppointment != null)
+                    {
+                        string msg = "The slot is unavailable due to that is confirmed or pending for confirmation.";
+                        _logger.LogWarning("{msg}", msg);
                         throw new ReservationException(msg);
                     }
 
                     var appointment = new Appointment
-                    {  
+                    {
                         AvailabilityId = availabilityId,
                         ClientId = clientId,
                         ReservationTime = currentTime,
@@ -69,21 +77,36 @@ namespace ReservationApi.Services
                         Client = client
                     };
 
-                    _context.Appointments.Add(appointment);
+                    await _context.Appointments.AddAsync(appointment);
                     await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
 
                     
-                    _logger.LogDebug("[{TypeName}] MakeReservation result: appointment: {appointment}", TypeName, String.Join(",", appointment));
+                    // after the commit, try retriving the new appointment
+                    var newAppointment = await _context.Appointments
+                        .Include(a => a.Availability)
+                        .Include(a => a.Client)
+                        .SingleOrDefaultAsync(a => a.Id == appointment.Id);
 
-                    return appointment;
+                    if (newAppointment == null)
+                    {
+                        string msg = "Appointment not saved.";
+                        _logger.LogWarning("{msg}", msg);
+                        throw new ReservationException(msg);
+                    }
+
+                    _logger.LogDebug("MakeReservation result: appointment: {appointment}", appointment.Id);
+
+                    return newAppointment;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "[{TypeName}] Exception in creating appointment: {ErrorMsg}", TypeName, ex.Message);
+                    _logger.LogError(ex, "Exception in creating appointment: {ErrorMsg}", ex.Message);
+                    await transaction.RollbackAsync();
                     throw;
                 }
             }
-            
+
         }
 
         /// <summary>
@@ -91,9 +114,9 @@ namespace ReservationApi.Services
         /// </summary>
         /// <param name="appointmentId"></param>
         /// <returns></returns>
-        public async Task ConfirmReservation(int appointmentId)
+        public async Task<Appointment> ConfirmReservation(int appointmentId)
         {
-            _logger.LogDebug("[{TypeName}] ConfirmReservation starts: appointmentId: {appointmentId}", TypeName, appointmentId);
+            _logger.LogDebug("ConfirmReservation starts: appointmentId: {appointmentId}", appointmentId);
 
             try
             {
@@ -101,26 +124,50 @@ namespace ReservationApi.Services
                 if (appointment == null)
                 {
                     string msg = "Appointment not found.";
-                    _logger.LogWarning("{TypeName} - {msg}", TypeName, msg);
+                    _logger.LogWarning("{msg}", msg);
+                    throw new ReservationException(msg);
+                }
+
+                if (appointment.IsConfirmed)
+                {
+                    string msg = "Already confirmed.";
+                    _logger.LogWarning("{msg}", msg);
                     throw new ReservationException(msg);
                 }
 
                 if (appointment.ExpirationTime < DateTime.Now)
                 {
-                    string msg = "Reservation has expired.";
-                    _logger.LogWarning("{TypeName} - {msg}", TypeName, msg);
+                    string msg = "Reservation has expired. Make a new application.";
+                    _logger.LogWarning("{msg}", msg);
                     throw new ReservationException(msg);
                 }
 
                 appointment.IsConfirmed = true;
                 await _context.SaveChangesAsync();
 
-                _logger.LogDebug("[{TypeName}] ConfirmReservation result: confirmed", TypeName);
+
+                // default is lazy loading, need eager loading here so that Availability and Client are not null, otherwise object reference exception 
+                //var updatedAppointment = await _context.Appointments.FindAsync(appointmentId);
+                var updatedAppointment = await _context.Appointments
+                    .Include(a => a.Availability)
+                    .Include(a => a.Client)
+                    .SingleOrDefaultAsync(a => a.Id == appointmentId);
+
+
+                if (updatedAppointment == null || !updatedAppointment.IsConfirmed)
+                {
+                    string msg = "Confirmation failed.";
+                    _logger.LogWarning("{msg}", msg);
+                    throw new ReservationException(msg);
+                }
+
+                _logger.LogDebug("ConfirmReservation result: confirmed");
+                return updatedAppointment;
 
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{TypeName}] Exception in confirming appointment: {ErrorMsg}", TypeName, ex.Message);
+                _logger.LogError(ex, "Exception in confirming appointment: {ErrorMsg}", ex.Message);
                 throw;
             }
         }

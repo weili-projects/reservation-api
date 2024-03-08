@@ -27,8 +27,6 @@ namespace ReservationApi.Controllers
     {
         private readonly IAppointmentService _appointmentService;
         private readonly ILogger<AppointmentController> _logger;
-        
-        private const string TypeName = "AppointmentController";
 
         public AppointmentController(IAppointmentService appointmentService, ILogger<AppointmentController> logger)
         {
@@ -36,18 +34,18 @@ namespace ReservationApi.Controllers
             _logger = logger;
         }
 
-        // reserve
-        // should lock
-        // should trigger the scheduler
-        // should send email
-        // need to be 24 hour earlier
+        // POST: api/appointment
         [HttpPost]
-        public async Task<ActionResult<Appointment>> MakeReservation([FromBody] ReservationDTO request)
+        public async Task<ActionResult<ReservationDTO>> MakeReservation([FromBody] AppointmentRequestDTO request)
         {
             try
             {
                 var app = await _appointmentService.MakeReservation(request.AvailabilityId, request.ClientId);
-                return app == null ?  BadRequest("No appointment created.") : StatusCode(201, app);
+                
+                var formattedResult = new ReservationDTO { AppointmentId = app.Id, AvailabilityId = app.AvailabilityId, AppointmentTime = app.Availability.StartTime, 
+                    ClientId = app.ClientId, ClientName = app.Client.Name, IsConfirm = app.IsConfirmed, ReservationTime = app.ReservationTime, ExpirationTime = app.ExpirationTime };
+
+                return app == null ?  BadRequest("No appointment created.") : StatusCode(201, formattedResult);
             }
             catch (ReservationException ex)
             {
@@ -55,23 +53,26 @@ namespace ReservationApi.Controllers
             }
             catch (Exception ex)
             {   
-                _logger.LogError(ex, "[{TypeName}] Exception in making reservation: {ErrorMsg}", TypeName, ex.Message);
+                _logger.LogError(ex, "Exception in making reservation: {ErrorMsg}", ex.Message);
                 return StatusCode(500, "Exception in making reservation.");
             }        
         }
         
-        // confirm
-        // should check permission
-        // should lock
-        // should deactivate the scheduler
-        // should send the email at the end
+        
+        // PATCH: api/availability/2
         [HttpPatch("{appointmentId}")]
-        public async Task<IActionResult> ConfirmReservation(int appointmentId)
+        public async Task<ActionResult<ReservationDTO>> ConfirmReservation(int appointmentId)
         {
             try
             {
-                await _appointmentService.ConfirmReservation(appointmentId);
-                return Ok();
+                var app = await _appointmentService.ConfirmReservation(appointmentId);
+
+                var formattedResult = new ReservationDTO { AppointmentId = app.Id, AvailabilityId = app.AvailabilityId, AppointmentTime = app.Availability.StartTime, 
+                    ClientId = app.ClientId, ClientName = app.Client.Name, IsConfirm = app.IsConfirmed, ReservationTime = app.ReservationTime, ExpirationTime = app.ExpirationTime };
+                
+                _logger.LogDebug("ConfirmReservation ctrl 3");
+
+                return Ok(formattedResult);
             }
             catch (ReservationException ex)
             {
@@ -79,7 +80,7 @@ namespace ReservationApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{TypeName}] Exception in confirming reservation: {ErrorMsg}", TypeName, ex.Message);
+                _logger.LogError(ex, "Exception in confirming reservation: {ErrorMsg}", ex.Message);
                 return StatusCode(500, "Exception in confirming reservation.");
             } 
         }

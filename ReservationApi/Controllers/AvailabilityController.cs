@@ -27,7 +27,6 @@ namespace ReservationApi.Controllers
     {
         private readonly IAvailabilityService _availabilityService;
         private readonly ILogger<AvailabilityController> _logger;
-        private const string TypeName = "AvailabilityController";
 
         public AvailabilityController(IAvailabilityService availabilityService, ILogger<AvailabilityController> logger)
         {
