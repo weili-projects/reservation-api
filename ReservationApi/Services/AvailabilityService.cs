@@ -51,7 +51,7 @@ namespace ReservationApi.Services
                 {
                     string msg = "Provider not found";
                     _logger.LogWarning("{msg}", msg);
-                    throw new ApplicationException(msg);
+                    throw new ReservationException(msg);
                 }
 
                 

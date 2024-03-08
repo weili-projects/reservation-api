@@ -17,6 +17,7 @@ using ReservationApi.DTOs;
 using ReservationApi.Models;
 using ReservationApi.Services;
 using ReservationApi.Services.Interfaces;
+using ReservationApi.Utils;
 
 namespace ReservationApi.Controllers
 {
@@ -47,7 +48,7 @@ namespace ReservationApi.Controllers
 
                 return result.Count > 0 ? StatusCode(201, formattedResult) : BadRequest("No available slot created.");
             }
-            catch (ApplicationException ex)
+            catch (ReservationException ex)
             {
                 return BadRequest(ex.Message);
             }

@@ -17,6 +17,7 @@ using ReservationApi.DTOs;
 using ReservationApi.Models;
 using ReservationApi.Services;
 using ReservationApi.Services.Interfaces;
+using ReservationApi.Utils;
 
 namespace ReservationApi.Controllers
 {
@@ -48,7 +49,7 @@ namespace ReservationApi.Controllers
                 var app = await _appointmentService.MakeReservation(request.AvailabilityId, request.ClientId);
                 return app == null ?  BadRequest("No appointment created.") : StatusCode(201, app);
             }
-            catch (ApplicationException ex)
+            catch (ReservationException ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -72,7 +73,7 @@ namespace ReservationApi.Controllers
                 await _appointmentService.ConfirmReservation(appointmentId);
                 return Ok();
             }
-            catch (ApplicationException ex)
+            catch (ReservationException ex)
             {
                 return BadRequest(ex.Message);
             }

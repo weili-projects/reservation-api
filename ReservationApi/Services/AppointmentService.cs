@@ -46,7 +46,7 @@ namespace ReservationApi.Services
                     {
                         string msg = "null availability or client";
                         _logger.LogWarning("[{TypeName}] {msg}", TypeName, msg);
-                        throw new ApplicationException(msg);
+                        throw new ReservationException(msg);
                     }
 
                     DateTime currentTime = DateTime.Now;
@@ -55,7 +55,7 @@ namespace ReservationApi.Services
                     {
                         string msg = "reservations must be mde at least 24 hours in advance.";
                         _logger.LogWarning("[{TypeName}] {msg}", TypeName, msg);
-                        throw new ApplicationException(msg);
+                        throw new ReservationException(msg);
                     }
 
                     var appointment = new Appointment
@@ -102,14 +102,14 @@ namespace ReservationApi.Services
                 {
                     string msg = "Appointment not found.";
                     _logger.LogWarning("{TypeName} - {msg}", TypeName, msg);
-                    throw new ApplicationException(msg);
+                    throw new ReservationException(msg);
                 }
 
                 if (appointment.ExpirationTime < DateTime.Now)
                 {
                     string msg = "Reservation has expired.";
                     _logger.LogWarning("{TypeName} - {msg}", TypeName, msg);
-                    throw new ApplicationException(msg);
+                    throw new ReservationException(msg);
                 }
 
                 appointment.IsConfirmed = true;
