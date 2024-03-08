@@ -41,6 +41,9 @@ app.Lifetime.ApplicationStarted.Register(async () =>
     }
 });
 
+app.UseRouting();
+app.MapControllers();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
