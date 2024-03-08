@@ -131,3 +131,4 @@ Due to time constraints, several areas can be considered for future improvements
 - Based on the business needs, some business logic can be revisited and updated. For example, if the provider provides a partially valid availability range, the valid parts may be honored. But this needs to be filtered on the client side. 
 - Based on the business needs, for availability retrieval, currently user can only search by provider ID. In the future, users can combine with date range and/or provider name. For performance enhancement, limit, sorting, and/or pagination may also be implemented.
 - Consider Unit tests and integration tests. The controller, service, and repository parts are separated and the dependency injection is done by the framework, and also consider mocking some of the dependencies (e.g. by using Moq) to test different parts.
+- Practically, consider implementing more parallelism and caching for scalability if the throughput is high.
