@@ -45,16 +45,16 @@ namespace ReservationApi.Controllers
                 var formattedResult = new ReservationDTO { AppointmentId = app.Id, AvailabilityId = app.AvailabilityId, AppointmentTime = app.Availability.StartTime, 
                     ClientId = app.ClientId, ClientName = app.Client.Name, IsConfirm = app.IsConfirmed, ReservationTime = app.ReservationTime, ExpirationTime = app.ExpirationTime };
 
-                return app == null ?  BadRequest("No appointment created.") : StatusCode(201, formattedResult);
+                return app == null ?  NotFound("No appointment created.") : StatusCode(201, formattedResult);
             }
             catch (ReservationException ex)
             {
-                return BadRequest(ex.Message);
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {   
                 _logger.LogError(ex, "Exception in making reservation: {ErrorMsg}", ex.Message);
-                return StatusCode(500, "Exception in making reservation.");
+                return NotFound("Exception in making reservation.");
             }        
         }
         
@@ -69,19 +69,17 @@ namespace ReservationApi.Controllers
 
                 var formattedResult = new ReservationDTO { AppointmentId = app.Id, AvailabilityId = app.AvailabilityId, AppointmentTime = app.Availability.StartTime, 
                     ClientId = app.ClientId, ClientName = app.Client.Name, IsConfirm = app.IsConfirmed, ReservationTime = app.ReservationTime, ExpirationTime = app.ExpirationTime };
-                
-                _logger.LogDebug("ConfirmReservation ctrl 3");
 
                 return Ok(formattedResult);
             }
             catch (ReservationException ex)
             {
-                return BadRequest(ex.Message);
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception in confirming reservation: {ErrorMsg}", ex.Message);
-                return StatusCode(500, "Exception in confirming reservation.");
+                return NotFound("Exception in confirming reservation.");
             } 
         }
         

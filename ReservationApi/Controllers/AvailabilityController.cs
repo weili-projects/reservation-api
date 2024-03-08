@@ -45,26 +45,26 @@ namespace ReservationApi.Controllers
                 
                 var formattedResult = result.Select(a => new SlotDTO { AvailabilityId = a.Id, StartTime = a.StartTime, EndTime = a.EndTime }).ToList();
 
-                return result.Count > 0 ? StatusCode(201, formattedResult) : BadRequest("No available slot created.");
+                return result.Count > 0 ? StatusCode(201, formattedResult) : NotFound("No available slot created.");
             }
             catch (ReservationException ex)
             {
-                return BadRequest(ex.Message);
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception in getting creating: {ErrorMsg}", ex.Message);
-                return StatusCode(500, "Exception in creating availability.");
+                return NotFound("Exception in creating availability.");
             }
         }
 
         // GET: api/availability/1
-        [HttpGet("{id}")]
-        public async Task<ActionResult<List<SlotDTO>>> GetAvailability(int id)
+        [HttpGet("{pid}")]
+        public async Task<ActionResult<List<SlotDTO>>> GetAvailability(int pid)
         {
             try
             {
-                var result = await _availabilityService.GetAvailability(id);
+                var result = await _availabilityService.GetAvailability(pid);
                 
                 var formattedResult = result.Select(a => new SlotDTO { AvailabilityId = a.Id, StartTime = a.StartTime, EndTime = a.EndTime }).ToList();
 
@@ -73,7 +73,7 @@ namespace ReservationApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception in getting availability: {ErrorMsg}", ex.Message);
-                return StatusCode(500, "Exception in getting availability.");
+                return NotFound("Exception in getting availability.");
             }
         }
 
