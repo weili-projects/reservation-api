@@ -40,6 +40,7 @@ namespace ReservationApi.Services
         /// </remarks>
         public async Task<List<Availability>> CreateAvailability(int providerId, IEnumerable<AvailabilityRangeDTO> availabilityRanges)
         {
+            _logger.LogDebug("[{TypeName}] CreateAvailability starts: providerId: {providerId}, availabilityRanges: {availabilityRanges}", TypeName, providerId, String.Join(",", availabilityRanges));
             try
             {
                 var provider = await _context.Providers.FindAsync(providerId);
@@ -78,10 +79,16 @@ namespace ReservationApi.Services
                         slotStartTime = slotEndTime;
                     }
                 }
+
+                _logger.LogDebug("[{TypeName}] CreateAvailability: validAvailabilities count: {count}", TypeName, validAvailabilities.Count);
+            
                 if (validAvailabilities.Count > 0)
                 {
                     await _context.AddRangeAsync(validAvailabilities);
                     await _context.SaveChangesAsync();
+
+                    _logger.LogDebug("[{TypeName}] CreateAvailability result: validAvailabilities: {validAvailabilities}", TypeName, String.Join(",", validAvailabilities));
+            
                 }
 
                 // can be zero or non-zero count
@@ -105,18 +112,24 @@ namespace ReservationApi.Services
         ///     Further consideration: get all availability by all providers, get avilability by date, etc
         /// </remarks>
         public async Task<List<Availability>> GetAvailability(int providerId)
-        {
+        { 
+            _logger.LogDebug("[{TypeName}] GetAvailability starts: providerId: {providerId}", TypeName, providerId);
+            
             try
             {
                 // don't show the past availability (for an availability less than 24 hours ahead, still show it but can't reserve it)
                 // don't show the availability that is in appointments which is confirmed or expiration date not reach
                 DateTime currentTime = DateTime.Now;
-                return await _context.Availabilities
+                var result = await _context.Availabilities
                     .Where(a => a.ProviderId == providerId &&
                         a.StartTime > currentTime &&
                         !_context.Appointments
                             .Any(app => app.AvailabilityId == a.Id && (app.IsConfirmed || app.ExpirationTime > currentTime)))
                     .ToListAsync();
+
+                _logger.LogDebug("[{TypeName}] GetAvailability result: {result}", TypeName, String.Join(",", result));
+            
+                return result;
             }
             catch (Exception ex)
             {

@@ -34,6 +34,8 @@ namespace ReservationApi.Services
         /// <returns></returns>
         public async Task<Appointment> MakeReservation(int availabilityId, int clientId)
         {
+            _logger.LogDebug("[{TypeName}] MakeReservation starts: availabilityId: {availabilityId}, clientId: {clientId}", TypeName, availabilityId, clientId);
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
@@ -67,6 +69,9 @@ namespace ReservationApi.Services
                     _context.Appointments.Add(appointment);
                     await _context.SaveChangesAsync();
 
+                    
+                    _logger.LogDebug("[{TypeName}] MakeReservation result: appointment: {appointment}", TypeName, String.Join(",", appointment));
+
                     return appointment;
                 }
                 catch (Exception ex)
@@ -85,6 +90,8 @@ namespace ReservationApi.Services
         /// <returns></returns>
         public async Task ConfirmReservation(int appointmentId)
         {
+            _logger.LogDebug("[{TypeName}] ConfirmReservation starts: appointmentId: {appointmentId}", TypeName, appointmentId);
+
             try
             {
                 var appointment = await _context.Appointments.FindAsync(appointmentId);
@@ -104,6 +111,8 @@ namespace ReservationApi.Services
 
                 appointment.IsConfirmed = true;
                 await _context.SaveChangesAsync();
+
+                _logger.LogDebug("[{TypeName}] ConfirmReservation result: confirmed", TypeName);
 
             }
             catch (Exception ex)
