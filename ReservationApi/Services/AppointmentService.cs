@@ -49,7 +49,9 @@ namespace ReservationApi.Services
                         throw new ApplicationException(msg);
                     }
 
-                    if (availability.StartTime < DateTime.Now.AddHours(24))
+                    DateTime currentTime = DateTime.Now;
+
+                    if (availability.StartTime < currentTime.AddHours(24))
                     {
                         string msg = "reservations must be mde at least 24 hours in advance.";
                         _logger.LogWarning("[{TypeName}] {msg}", TypeName, msg);
@@ -60,7 +62,8 @@ namespace ReservationApi.Services
                     {  
                         AvailabilityId = availabilityId,
                         ClientId = clientId,
-                        ReservationTime = DateTime.Now,
+                        ReservationTime = currentTime,
+                        ExpirationTime = currentTime.AddMinutes(30),
                         IsConfirmed = false,
                         Availability = availability,
                         Client = client

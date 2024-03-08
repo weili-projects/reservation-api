@@ -18,8 +18,6 @@ namespace ReservationApi.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AvailabilityService> _logger;
 
-        private const string TypeName = "AvailabilityService";
-
         public AvailabilityService(ApplicationDbContext context, ILogger<AvailabilityService> logger)
         {
             _context = context;
@@ -40,34 +38,53 @@ namespace ReservationApi.Services
         /// </remarks>
         public async Task<List<Availability>> CreateAvailability(int providerId, IEnumerable<AvailabilityRangeDTO> availabilityRanges)
         {
-            _logger.LogDebug("[{TypeName}] CreateAvailability starts: providerId: {providerId}, availabilityRanges: {availabilityRanges}", TypeName, providerId, String.Join(",", availabilityRanges));
+            _logger.LogDebug("CreateAvailability starts: providerId: {providerId}", providerId);
+            foreach(var range in availabilityRanges) 
+            {
+                _logger.LogDebug("range: {start} - {end}", range.StartTime, range.EndTime);
+            }
+
             try
             {
                 var provider = await _context.Providers.FindAsync(providerId);
                 if (provider == null)
                 {
                     string msg = "Provider not found";
-                    _logger.LogWarning("{TypeName} - {msg}", TypeName, msg);
+                    _logger.LogWarning("{msg}", msg);
                     throw new ApplicationException(msg);
                 }
 
                 
+                HashSet<DateTime> existingSlots = new HashSet<DateTime>();
+                List<Availability> existingAvailabilities = await GetAvailability(providerId);
+                foreach(var slot in existingAvailabilities)
+                {
+                    existingSlots.Add(slot.StartTime);
+                }
+
+
                 var validAvailabilities = new List<Availability>();
 
                 foreach (var range in availabilityRanges)
                 {
                     // Ideally the sanitize check should be checked on the client side 
-                    // check overlap
                     if (!Helpers.IsValidTime(range.StartTime) || !Helpers.IsValidTime(range.EndTime) || range.EndTime < DateTime.Now)
                     {
-                        // log it
+                        _logger.LogDebug("CreateAvailability: skipping range {start} - {end}", range.StartTime, range.EndTime);
                         continue;
                     }
 
                     DateTime slotStartTime = range.StartTime;
-
-                    while ((slotStartTime - range.EndTime).TotalMinutes >= 15 && slotStartTime > DateTime.Now)
+                    
+                    for (;(range.EndTime - slotStartTime).TotalMinutes >= 15 && slotStartTime > DateTime.Now; slotStartTime = slotStartTime.AddMinutes(15))
                     {
+                        // if a slot has been added, skip it
+                        if (existingSlots.Contains(slotStartTime))
+                        {
+                            _logger.LogDebug("CreateAvailability: slot with start time {start} already exists for provider id: {id}", slotStartTime, providerId);
+                            continue;
+                        }
+
                         DateTime slotEndTime = slotStartTime.AddMinutes(15);
                         validAvailabilities.Add(new Availability
                         {
@@ -76,28 +93,27 @@ namespace ReservationApi.Services
                             EndTime = slotEndTime,
                             Provider = provider
                         });
-                        slotStartTime = slotEndTime;
                     }
                 }
 
-                _logger.LogDebug("[{TypeName}] CreateAvailability: validAvailabilities count: {count}", TypeName, validAvailabilities.Count);
+                _logger.LogDebug("CreateAvailability: validAvailabilities count: {count}", validAvailabilities.Count);
             
                 if (validAvailabilities.Count > 0)
                 {
                     await _context.AddRangeAsync(validAvailabilities);
                     await _context.SaveChangesAsync();
-
-                    _logger.LogDebug("[{TypeName}] CreateAvailability result: validAvailabilities: {validAvailabilities}", TypeName, String.Join(",", validAvailabilities));
-            
+                    
+                    foreach(var a in validAvailabilities) 
+                    {
+                        _logger.LogDebug("CreateAvailability result: slot availability id: {id}, provider id: {pid}, start: {start}, end: {end}", a.Id, a.ProviderId, a.StartTime, a.EndTime);    
+                    }
                 }
 
-                // can be zero or non-zero count
                 return validAvailabilities;
             }
             catch (Exception ex)
             {
-                
-                _logger.LogError(ex, "[{TypeName}] Exception in creating availability: {ErrorMsg}", TypeName, ex.Message);
+                _logger.LogError(ex, "Exception in creating availability: {ErrorMsg}", ex.Message);
                 throw;
             }
 
@@ -113,7 +129,7 @@ namespace ReservationApi.Services
         /// </remarks>
         public async Task<List<Availability>> GetAvailability(int providerId)
         { 
-            _logger.LogDebug("[{TypeName}] GetAvailability starts: providerId: {providerId}", TypeName, providerId);
+            _logger.LogDebug("GetAvailability starts: providerId: {providerId}", providerId);
             
             try
             {
@@ -127,13 +143,13 @@ namespace ReservationApi.Services
                             .Any(app => app.AvailabilityId == a.Id && (app.IsConfirmed || app.ExpirationTime > currentTime)))
                     .ToListAsync();
 
-                _logger.LogDebug("[{TypeName}] GetAvailability result: {result}", TypeName, String.Join(",", result));
+                _logger.LogDebug("GetAvailability result: {result}", String.Join(",", result));
             
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{TypeName}] Exception in getting availability: {ErrorMsg}", TypeName, ex.Message);
+                _logger.LogError(ex, "Exception in getting availability: {ErrorMsg}", ex.Message);
                 throw;
             }
         }

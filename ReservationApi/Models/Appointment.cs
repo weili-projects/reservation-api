@@ -28,8 +28,11 @@ namespace ReservationApi.Models
         public DateTime ReservationTime { get; set; }
 
         // automatically expired after 30 minutes from the ReservationTime
-        [NotMapped]
-        public DateTime ExpirationTime => ReservationTime.AddMinutes(30);
+        //[NotMapped]
+        //public DateTime ExpirationTime => ReservationTime.AddMinutes(30);
+        [Required]
+        [Column("expiration_time")]
+        public DateTime ExpirationTime { get; set; }
 
 
         [ForeignKey("AvailabilityId")]

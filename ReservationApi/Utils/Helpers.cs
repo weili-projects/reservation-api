@@ -5,7 +5,9 @@ namespace ReservationApi.Utils
         public static bool IsValidTime(DateTime time)
         {
             int minute = time.Minute;
-            return minute % 15 == 0;
+            int second = time.Second;
+            return minute % 15 == 0 && second == 0;
+
         }
     }
 }

@@ -35,6 +35,19 @@ namespace ReservationApi.Data
                 .WithOne(app => app.Client)
                 .HasForeignKey(app => app.ClientId);
 
+            // although Id is set to Key with auto-increment, need to set Id with HasData, or exception will be thrown
+            modelBuilder.Entity<Provider>()
+                .HasData(
+                    new Provider { Id = 1, Name = "Li" },
+                    new Provider { Id = 2, Name = "Jekyll" },
+                    new Provider { Id = 3, Name = "Meds" });
+
+            modelBuilder.Entity<Client>()
+                .HasData(
+                    new Client { Id = 1, Name = "C1" },
+                    new Client { Id = 2, Name = "C2" },
+                    new Client { Id = 3, Name = "C3" });
+
         }
 
     }

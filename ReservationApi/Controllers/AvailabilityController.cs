@@ -37,13 +37,15 @@ namespace ReservationApi.Controllers
         // POST: api/availability
         // only Provider role can do it
         [HttpPost]
-        public async Task<ActionResult<Availability>> CreateAvailability([FromBody] AvailabilityRequestDTO request)
+        public async Task<ActionResult<List<SlotDTO>>> CreateAvailability([FromBody] AvailabilityRequestDTO request)
         {
             try
             {
                 var result = await _availabilityService.CreateAvailability(request.ProviderId, request.AvailabilityRanges);
+                
+                var formattedResult = result.Select(a => new SlotDTO { AvailabilityId = a.Id, StartTime = a.StartTime, EndTime = a.EndTime }).ToList();
 
-                return result.Count > 0 ? StatusCode(201, result) : BadRequest("No available slot created.");
+                return result.Count > 0 ? StatusCode(201, formattedResult) : BadRequest("No available slot created.");
             }
             catch (ApplicationException ex)
             {
@@ -51,23 +53,26 @@ namespace ReservationApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{TypeName}] Exception in getting creating: {ErrorMsg}", TypeName, ex.Message);
+                _logger.LogError(ex, "Exception in getting creating: {ErrorMsg}", ex.Message);
                 return StatusCode(500, "Exception in creating availability.");
             }
         }
 
         // GET: api/availability/1
         [HttpGet("{id}")]
-        public async Task<ActionResult<Availability>> GetAvailability(int id)
+        public async Task<ActionResult<List<SlotDTO>>> GetAvailability(int id)
         {
             try
             {
                 var result = await _availabilityService.GetAvailability(id);
-                return result.Count > 0 ? Ok(result) : NoContent();
+                
+                var formattedResult = result.Select(a => new SlotDTO { AvailabilityId = a.Id, StartTime = a.StartTime, EndTime = a.EndTime }).ToList();
+
+                return result.Count > 0 ? Ok(formattedResult) : NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{TypeName}] Exception in getting availability: {ErrorMsg}", TypeName, ex.Message);
+                _logger.LogError(ex, "Exception in getting availability: {ErrorMsg}", ex.Message);
                 return StatusCode(500, "Exception in getting availability.");
             }
         }
