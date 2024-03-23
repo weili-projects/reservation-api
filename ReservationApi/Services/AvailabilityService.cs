@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 using ReservationApi.Data;
-using ReservationApi.DTOs;
 using ReservationApi.Models;
 using ReservationApi.Services.Interfaces;
 using ReservationApi.Utils;

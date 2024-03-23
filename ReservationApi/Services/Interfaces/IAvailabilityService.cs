@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using ReservationApi.Models;
-using ReservationApi.DTOs;
 
 namespace ReservationApi.Services.Interfaces
 {
