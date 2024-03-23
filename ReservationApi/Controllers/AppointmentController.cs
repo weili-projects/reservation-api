@@ -41,11 +41,16 @@ namespace ReservationApi.Controllers
             try
             {
                 var app = await _appointmentService.MakeReservation(request.AvailabilityId, request.ClientId);
+
+                if (app == null)
+                {
+                    return NotFound("No appointment created.");
+                }
                 
                 var formattedResult = new ReservationDTO { AppointmentId = app.Id, AvailabilityId = app.AvailabilityId, AppointmentTime = app.Availability.StartTime, 
                     ClientId = app.ClientId, ClientName = app.Client.Name, IsConfirm = app.IsConfirmed, ReservationTime = app.ReservationTime, ExpirationTime = app.ExpirationTime };
 
-                return app == null ?  NotFound("No appointment created.") : StatusCode(201, formattedResult);
+                return StatusCode(201, formattedResult);
             }
             catch (ReservationException ex)
             {

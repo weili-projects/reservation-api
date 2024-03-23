@@ -41,7 +41,11 @@ namespace ReservationApi.Controllers
         {
             try
             {
-                var result = await _availabilityService.CreateAvailability(request.ProviderId, request.AvailabilityRanges);
+                List<(DateTime, DateTime)> datetimeRanges = request.AvailabilityRanges
+                    .Select(dtoRange => (dtoRange.StartTime, dtoRange.EndTime))
+                    .ToList();
+                
+                var result = await _availabilityService.CreateAvailability(request.ProviderId, datetimeRanges);
                 
                 var formattedResult = result.Select(a => new SlotDTO { AvailabilityId = a.Id, StartTime = a.StartTime, EndTime = a.EndTime }).ToList();
 
@@ -65,10 +69,15 @@ namespace ReservationApi.Controllers
             try
             {
                 var result = await _availabilityService.GetAvailability(pid);
+
+                if (result.Count == 0)
+                {
+                    return NoContent();
+                }
                 
                 var formattedResult = result.Select(a => new SlotDTO { AvailabilityId = a.Id, StartTime = a.StartTime, EndTime = a.EndTime }).ToList();
 
-                return result.Count > 0 ? Ok(formattedResult) : NoContent();
+                return Ok(formattedResult);
             }
             catch (Exception ex)
             {
