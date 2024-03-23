@@ -36,12 +36,12 @@ namespace ReservationApi.Services
         ///     Assumption: the ranges may have overlap of the existing slots, in this case, only create the non-overlap ones.
         ///     the creation rule depends on business needs
         /// </remarks>
-        public async Task<List<Availability>> CreateAvailability(int providerId, IEnumerable<AvailabilityRangeDTO> availabilityRanges)
+        public async Task<List<Availability>> CreateAvailability(int providerId, IEnumerable<(DateTime, DateTime)> availabilityRanges)
         {
             _logger.LogDebug("CreateAvailability starts: providerId: {providerId}", providerId);
             foreach(var range in availabilityRanges) 
             {
-                _logger.LogDebug("range: {start} - {end}", range.StartTime, range.EndTime);
+                _logger.LogDebug("range: {start} - {end}", range.Item1, range.Item2);
             }
 
             try
@@ -67,16 +67,18 @@ namespace ReservationApi.Services
 
                 foreach (var range in availabilityRanges)
                 {
+                    DateTime rangeStartTime = range.Item1;
+                    DateTime rangeEndTime = range.Item2;
                     // Ideally the sanitize check should be checked on the client side 
-                    if (!Helpers.IsValidTime(range.StartTime) || !Helpers.IsValidTime(range.EndTime) || range.EndTime < DateTime.Now)
+                    if (!Helpers.IsValidTime(rangeStartTime) || !Helpers.IsValidTime(rangeEndTime) || rangeEndTime < DateTime.Now)
                     {
-                        _logger.LogDebug("CreateAvailability: skipping range {start} - {end}", range.StartTime, range.EndTime);
+                        _logger.LogDebug("CreateAvailability: skipping range {start} - {end}", rangeStartTime, rangeEndTime);
                         continue;
                     }
 
-                    DateTime slotStartTime = range.StartTime;
+                    DateTime slotStartTime = rangeStartTime;
                     
-                    for (;(range.EndTime - slotStartTime).TotalMinutes >= 15 && slotStartTime > DateTime.Now; slotStartTime = slotStartTime.AddMinutes(15))
+                    for (;(rangeEndTime - slotStartTime).TotalMinutes >= 15 && slotStartTime > DateTime.Now; slotStartTime = slotStartTime.AddMinutes(15))
                     {
                         // if a slot has been added, skip it
                         if (existingSlots.Contains(slotStartTime))
@@ -93,6 +95,7 @@ namespace ReservationApi.Services
                             EndTime = slotEndTime,
                             Provider = provider
                         });
+                        existingSlots.Add(slotStartTime);
                     }
                 }
 

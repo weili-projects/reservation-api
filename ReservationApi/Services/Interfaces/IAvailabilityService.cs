@@ -8,7 +8,7 @@ namespace ReservationApi.Services.Interfaces
 {
     public interface IAvailabilityService
     {
-        Task<List<Availability>> CreateAvailability(int providerId, IEnumerable<AvailabilityRangeDTO> availabilityRanges);
+        Task<List<Availability>> CreateAvailability(int providerId, IEnumerable<(DateTime, DateTime)> availabilityRanges);
 
         Task<List<Availability>> GetAvailability(int providerId);
 
