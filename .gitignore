@@ -1,7 +1,7 @@
-Debug/
-Release/
-[Oo]bj
-[Bb]in
+[Dd]ebug/
+[Rr]elease/
+[Oo]bj/
+[Bb]in/
 
 *.db-shm
 *.db-wal
