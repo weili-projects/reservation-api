@@ -7,6 +7,7 @@
 #### Project type: .NET Web API
 #### Target framework: .NET 8.0
 #### Database: SQLite
+#### Code repository: https://github.com/weili-projects/reservation-api
 
 <br><br>
 
